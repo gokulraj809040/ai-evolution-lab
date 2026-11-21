@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive N-gram Language Model Lab — 75-Task Master Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(30, 41, 59, 0.7);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --info: #38bdf8;
+      --info-bg: rgba(56, 189, 248, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.12) 0px, transparent 40%),
+        radial-gradient(at 85% 85%, rgba(236, 72, 153, 0.08) 0px, transparent 40%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      padding: 2.5rem 1.5rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    .badge-pill .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.6rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 680px;
+      margin: 0 auto 1.5rem;
+    }
+
+    /* Overall Progress Bar */
+    .hero-stats {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .stats-counter {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .stats-counter span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stats-status {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 1rem;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent-gradient);
+      border-radius: 9999px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Filter & Controls */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 0.3rem;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active, .filter-btn:hover {
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    /* Phase Section Cards */
+    .phase-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .phase-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .phase-card.active-phase {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 20px -5px var(--accent-glow);
+    }
+
+    .phase-header {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid transparent;
+      transition: background 0.2s;
+    }
+
+    .phase-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .phase-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .phase-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.2);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .phase-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .phase-badge-opt {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .phase-meta {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .phase-progress-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .chevron {
+      color: var(--text-dim);
+      transition: transform 0.2s;
+    }
+
+    .phase-card.collapsed .chevron {
+      transform: rotate(-90deg);
+    }
+
+    .phase-card.collapsed .phase-body {
+      display: none;
+    }
+
+    .phase-card:not(.collapsed) .phase-header {
+      border-bottom-color: var(--card-border);
+    }
+
+    .phase-body {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .phase-concepts {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .concept-tag {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+    }
+
+    /* Tasks List */
+    .task-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      transition: background 0.15s;
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .task-item:hover {
+      background: var(--card-hover);
+    }
+
+    .task-item.completed {
+      background: rgba(16, 185, 129, 0.04);
+    }
+
+    .task-item.in-progress {
+      background: rgba(99, 102, 241, 0.08);
+      border-left: 3px solid var(--accent);
+    }
+
+    .task-checkbox {
+      margin-top: 0.25rem;
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .task-content {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .task-label {
+      font-size: 0.92rem;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .task-item.completed .task-label {
+      text-decoration: line-through;
+      color: var(--text-dim);
+    }
+
+    .task-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: #818cf8;
+      margin-right: 0.4rem;
+    }
+
+    .task-status-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-completed {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .status-in-progress {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+    }
+
+    .status-pending {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-dim);
+    }
+
+    .phase-criteria {
+      margin-top: 1.25rem;
+      padding: 0.75rem 1rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+      border-left: 3px solid var(--info);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .phase-criteria strong {
+      color: #7dd3fc;
+    }
+
+    /* Core Functions Reference Table */
+    .reference-section {
+      margin-top: 3rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.75rem 2rem;
+    }
+
+    .reference-section h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text-main);
+    }
+
+    .reference-section p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    td code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.12);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-pill">
+        <span class="pulse-dot"></span>
+        Hands-on GenAI Engineering
+      </div>
+      <h1>Interactive N-gram Language Model Lab</h1>
+      <p class="subtitle">
+        75-Task Master Execution Tracker. One task at a time: <strong>Understand → Implement → Inspect → Test → Review → Confirm → Next</strong>.
+      </p>
+    </header>
+
+    <!-- Hero Stats & Progress -->
+    <div class="hero-stats">
+      <div class="stats-header">
+        <div class="stats-counter">
+          Overall Progress: <span id="progress-percent">0%</span>
+        </div>
+        <div class="stats-status">
+          <div><strong id="completed-count" style="color: var(--success);">1</strong> / 75 Completed</div>
+          <div><strong id="active-task-label" style="color: #a5b4fc;">Task 1.8 In Progress</strong></div>
+        </div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width: 1.33%;"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-bar">
+      <div class="filter-tabs">
+        <button class="filter-btn active" onclick="setFilter('all')">All Tasks (75)</button>
+        <button class="filter-btn" onclick="setFilter('in-progress')">In Progress</button>
+        <button class="filter-btn" onclick="setFilter('completed')">Completed</button>
+        <button class="filter-btn" onclick="setFilter('pending')">Pending</button>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="action-btn" onclick="toggleAllPhases(false)">Collapse All</button>
+        <button class="action-btn" onclick="toggleAllPhases(true)">Expand All</button>
+        <button class="action-btn" onclick="resetToInitial()">Reset to Checkpoint</button>
+      </div>
+    </div>
+
+    <!-- Phase Containers Generated by JS -->
+    <div id="phases-root"></div>
+
+    <!-- Core Functions Reference -->
+    <div class="reference-section">
+      <h2>The Core Functions You'll Understand By The End</h2>
+      <p>The statistical language model pipeline mapped to fundamental GenAI concepts:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Engine Function</th>
+            <th>Main GenAI Concept</th>
+            <th>Role in the Autoregressive Pipeline</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>normalizeText()</code></td>
+            <td>Preprocessing</td>
+            <td>Standardizes case, trims whitespace, handles punctuation rules</td>
+          </tr>
+          <tr>
+            <td><code>tokenize()</code></td>
+            <td>Tokenization</td>
+            <td>Converts raw string sequences into discrete mathematical tokens</td>
+          </tr>
+          <tr>
+            <td><code>extractNgrams()</code></td>
+            <td>Context-window construction</td>
+            <td>Extracts sliding window $(N-1)$ context tuples and target tokens</td>
+          </tr>
+          <tr>
+            <td><code>trainModel()</code></td>
+            <td>Statistical training</td>
+            <td>Accumulates sequence frequencies into nested Map distribution tables</td>
+          </tr>
+          <tr>
+            <td><code>extractContext()</code></td>
+            <td>Context selection</td>
+            <td>Extracts the last $(N-1)$ prompt tokens for candidate conditioning</td>
+          </tr>
+          <tr>
+            <td><code>lookupCandidates()</code></td>
+            <td>Model inference</td>
+            <td>Queries the statistical model for continuations given current context</td>
+          </tr>
+          <tr>
+            <td><code>calculateProbabilities()</code></td>
+            <td>Probability distributions</td>
+            <td>Normalizes raw counts into conditional probabilities: $P(w_i \mid w_{i-N+1}^{i-1})$</td>
+          </tr>
+          <tr>
+            <td><code>decodeGreedy() / decode()</code></td>
+            <td>Next-token selection</td>
+            <td>Selects token via Greedy argmax, Temperature scaling, Top-K, or Top-P</td>
+          </tr>
+          <tr>
+            <td><code>predictNext()</code></td>
+            <td>Prediction pipeline</td>
+            <td>Coordinates context lookup, probability distribution, and candidate ranking</td>
+          </tr>
+          <tr>
+            <td><code>generateText()</code></td>
+            <td>Autoregressive generation</td>
+            <td>Iterative generation loop updating context until EOS or max tokens</td>
+          </tr>
+          <tr>
+            <td><code>evaluateModel()</code></td>
+            <td>Model evaluation</td>
+            <td>Measures top-1 accuracy, perplexity, and unknown-context rate on held-out test data</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer>
+      Interactive N-gram Language Model Lab &bull; Pure TypeScript + React 19 + Vitest &bull; Codex Mentorship Engine
+    </footer>
+  </div>
+
+  <script>
+    const PHASES_DATA = [
+      {
+        id: 1,
+        title: "Project Setup and Architecture",
+        concepts: ["React setup", "TypeScript types", "separation of concerns", "pure functions", "data contracts"],
+        criteria: "App runs locally, build passes, test runner works, and interfaces are approved.",
+        tasks: [
+          { id: "1.1", text: "Create React + TypeScript + Vite project", initialStatus: "completed" },
+          { id: "1.2", text: "Install/configure Tailwind CSS", initialStatus: "completed" },
+          { id: "1.3", text: "Install/configure Vitest and React Testing Library", initialStatus: "completed" },
+          { id: "1.4", text: "Plan the folder structure: engine, components, hooks, types and tests", initialStatus: "completed" },
+          { id: "1.5", text: "Define model types: Token, Context, NgramModel, Candidate, PredictionResult", initialStatus: "completed" },
+          { id: "1.6", text: "Agree on word tokenization, punctuation handling and BOS/EOS conventions", initialStatus: "completed" },
+          { id: "1.7", text: "Define the shared input/output tracing interface", initialStatus: "completed" },
+          { id: "1.8", text: "Initialize Git and project progress documents", initialStatus: "in-progress" }
+        ]
+      },
+      {
+        id: 2,
+        title: "N-gram Training Engine",
+        concepts: ["Text preprocessing", "tokens", "sliding windows", "unigrams/bigrams/trigrams", "frequency distributions", "sentence boundaries"],
+        criteria: "Training text produces correct N-gram counts, with a traceable pipeline and passing unit tests.",
+        tasks: [
+          { id: "2.1", text: "Implement normalizeText() for case, whitespace and agreed punctuation rules", initialStatus: "pending" },
+          { id: "2.2", text: "Implement tokenize() to convert text into tokens", initialStatus: "pending" },
+          { id: "2.3", text: "Implement sentence splitting and explicit BOS/EOS handling", initialStatus: "pending" },
+          { id: "2.4", text: "Implement extractNgrams() for N=1, N=2 and N=3", initialStatus: "pending" },
+          { id: "2.5", text: "Implement trainModel() using a nested Map of context → next-token counts", initialStatus: "pending" },
+          { id: "2.6", text: "Count duplicate observations correctly", initialStatus: "pending" },
+          { id: "2.7", text: "Add input/output console traces for each training function", initialStatus: "pending" },
+          { id: "2.8", text: "Write Vitest tests for tokenization, N-gram extraction and counts", initialStatus: "pending" }
+        ]
+      },
+      {
+        id: 3,
+        title: "Prediction and Decoding Engine",
+        concepts: ["Context windows", "conditional probability", "candidate ranking", "inference", "greedy decoding", "sampling", "temperature", "Top-K", "Top-P", "backoff"],
+        criteria: "Given a prompt and trained model, the engine returns accurate ranked candidates and a selected token.",
+        tasks: [
+          { id: "3.1", text: "Implement extractContext() using the last N−1 tokens", initialStatus: "pending" },
+          { id: "3.2", text: "Implement lookupCandidates() to find candidate continuations", initialStatus: "pending" },
+          { id: "3.3", text: "Implement calculateProbabilities() as count ÷ context total", initialStatus: "pending" },
+          { id: "3.4", text: "Rank predictions with deterministic tie-breaking", initialStatus: "pending" },
+          { id: "3.5", text: "Implement decodeGreedy()", initialStatus: "pending" },
+          { id: "3.6", text: "Implement probability-weighted random sampling", initialStatus: "pending" },
+          { id: "3.7", text: "Implement temperature scaling", initialStatus: "pending" },
+          { id: "3.8", text: "Implement Top-K filtering and renormalization", initialStatus: "pending" },
+          { id: "3.9", text: "Implement Top-P filtering and renormalization", initialStatus: "pending" },
+          { id: "3.10", text: "Implement safe unknown-context handling and optional lower-order backoff", initialStatus: "pending" },
+          { id: "3.11", text: "Build predictNext() to coordinate all prediction steps", initialStatus: "pending" },
+          { id: "3.12", text: "Log every prediction function's input and output", initialStatus: "pending" },
+          { id: "3.13", text: "Write Vitest tests, including controlled randomness", initialStatus: "pending" }
+        ]
+      },
+      {
+        id: 4,
+        title: "React Live Prediction and Suggestion Popup",
+        concepts: ["Controlled inputs", "state updates", "debouncing", "stale results", "effects", "UI integration"],
+        criteria: "The user can train the model, type a prompt, pause, and see accurate clickable next-word suggestions.",
+        tasks: [
+          { id: "4.1", text: "Create training corpus textarea with sample data", initialStatus: "pending" },
+          { id: "4.2", text: "Add N selector and Train button", initialStatus: "pending" },
+          { id: "4.3", text: "Connect Train to trainModel() and store the model in React state", initialStatus: "pending" },
+          { id: "4.4", text: "Detect changed training text and show a retrain-required state", initialStatus: "pending" },
+          { id: "4.5", text: "Create the user's prompt input", initialStatus: "pending" },
+          { id: "4.6", text: "Implement a 400 ms debounced prediction hook/effect", initialStatus: "pending" },
+          { id: "4.7", text: "Call predictNext() after typing pauses, without retraining", initialStatus: "pending" },
+          { id: "4.8", text: "Display next-word candidates, counts and probabilities in a popup", initialStatus: "pending" },
+          { id: "4.9", text: "Allow clicking a suggestion to append the selected word", initialStatus: "pending" },
+          { id: "4.10", text: "Handle unknown context, empty prompt and disabled/untrained states", initialStatus: "pending" },
+          { id: "4.11", text: "Prevent stale predictions when typing or training changes", initialStatus: "pending" },
+          { id: "4.12", text: "Test debounce timing and popup interactions using fake timers", initialStatus: "pending" }
+        ]
+      },
+      {
+        id: 5,
+        title: "Multi-word Text Generation",
+        concepts: ["Autoregressive loops", "context updates", "decoding strategies", "end-of-sequence tokens", "stopping conditions"],
+        criteria: "The app generates multiple words from a prompt with configured decoding and clear stop behavior.",
+        tasks: [
+          { id: "5.1", text: "Implement generateText() as a repeated prediction/decoding loop", initialStatus: "pending" },
+          { id: "5.2", text: "Append each generated token and update the context", initialStatus: "pending" },
+          { id: "5.3", text: "Support maximum new-token limits", initialStatus: "pending" },
+          { id: "5.4", text: "Stop generation on EOS or when no valid continuation exists", initialStatus: "pending" },
+          { id: "5.5", text: "Expose decoding settings (Greedy, Sampling, Temperature, Top-K and Top-P)", initialStatus: "pending" },
+          { id: "5.6", text: "Create the Generate button and generated-output panel", initialStatus: "pending" },
+          { id: "5.7", text: "Trace every iteration, including candidates, choice and updated context", initialStatus: "pending" },
+          { id: "5.8", text: "Implement Reset/Clear controls", initialStatus: "pending" },
+          { id: "5.9", text: "Test stopping conditions, context updates and deterministic generation", initialStatus: "pending" }
+        ]
+      },
+      {
+        id: 6,
+        title: "Testing and Model Evaluation",
+        concepts: ["Unit versus integration testing", "held-out data", "accuracy", "coverage", "repetition", "diversity", "regression analysis"],
+        criteria: "All agreed critical checks pass and model-quality metrics are recorded from reproducible experiments.",
+        tasks: [
+          { id: "6.1", text: "Run a complete suite of unit tests for the engine", initialStatus: "pending" },
+          { id: "6.2", text: "Test all major UI workflows end-to-end at the component/integration level", initialStatus: "pending" },
+          { id: "6.3", text: "Prepare separate training and held-out evaluation examples", initialStatus: "pending" },
+          { id: "6.4", text: "Implement top-1 next-token accuracy measurement", initialStatus: "pending" },
+          { id: "6.5", text: "Implement unknown-context rate measurement", initialStatus: "pending" },
+          { id: "6.6", text: "Measure generated-text repetition and unique-token diversity", initialStatus: "pending" },
+          { id: "6.7", text: "Compare decoding strategies on controlled prompts", initialStatus: "pending" },
+          { id: "6.8", text: "Test edge cases: empty corpus, short prompts, invalid N and invalid settings", initialStatus: "pending" },
+          { id: "6.9", text: "Document actual measured results and failure cases", initialStatus: "pending" },
+          { id: "6.10", text: "Run TypeScript checks and production build", initialStatus: "pending" }
+        ]
+      },
+      {
+        id: 7,
+        title: "Optional Model Visualizations",
+        isOptional: true,
+        concepts: ["Turning model traces into understandable educational views"],
+        criteria: "Optional: users can inspect the trained model visually. This phase can be skipped without blocking project completion.",
+        tasks: [
+          { id: "7.1", text: "Add tokenization preview", initialStatus: "pending" },
+          { id: "7.2", text: "Show sliding-window context/target pairs", initialStatus: "pending" },
+          { id: "7.3", text: "Build a nested Map/frequency explorer", initialStatus: "pending" },
+          { id: "7.4", text: "Display candidate probability charts", initialStatus: "pending" },
+          { id: "7.5", text: "Add a step-by-step prediction trace viewer", initialStatus: "pending" },
+          { id: "7.6", text: "Add generation replay and decoder comparisons", initialStatus: "pending" }
+        ]
+      },
+      {
+        id: 8,
+        title: "GitHub Delivery and Final Review",
+        concepts: ["Git workflow", "CI", "documentation", "reproducibility", "acceptance testing", "engineering communication"],
+        criteria: "Independent GitHub repository contains working code, passing checks, documentation and verified learning outcomes.",
+        tasks: [
+          { id: "8.1", text: "Review source structure and code quality", initialStatus: "pending" },
+          { id: "8.2", text: "Run final type checks, tests and build", initialStatus: "pending" },
+          { id: "8.3", text: "Configure GitHub Actions for automated checks", initialStatus: "pending" },
+          { id: "8.4", text: "Write README: setup, usage, architecture and algorithms", initialStatus: "pending" },
+          { id: "8.5", text: "Add evaluation report and known limitations", initialStatus: "pending" },
+          { id: "8.6", text: "Prepare screenshots/demo and explain the full pipeline", initialStatus: "pending" },
+          { id: "8.7", text: "Review Git diff and prepare meaningful commits", initialStatus: "pending" },
+          { id: "8.8", text: "Push to the dedicated ngram-text-generator GitHub repository after approval", initialStatus: "pending" },
+          { id: "8.9", text: "Verify repository contents and complete final technical assessment", initialStatus: "pending" }
+        ]
+      }
+    ];
+
+    const STORAGE_KEY = 'ngram_lab_checklist_v2';
+    let currentFilter = 'all';
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load saved state", e);
+      }
+      // default state
+      const defaultState = {};
+      PHASES_DATA.forEach(phase => {
+        phase.tasks.forEach(task => {
+          defaultState[task.id] = task.initialStatus;
+        });
+      });
+      return defaultState;
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    let taskStates = loadState();
+
+    function renderTracker() {
+      const root = document.getElementById('phases-root');
+      root.innerHTML = '';
+
+      let totalTasks = 0;
+      let completedTasks = 0;
+
+      PHASES_DATA.forEach(phase => {
+        const phaseTasks = phase.tasks;
+        const phaseTotal = phaseTasks.length;
+        const phaseCompleted = phaseTasks.filter(t => taskStates[t.id] === 'completed').length;
+        totalTasks += phaseTotal;
+        completedTasks += phaseCompleted;
+
+        const isCurrentPhase = phase.tasks.some(t => taskStates[t.id] === 'in-progress');
+
+        const card = document.createElement('div');
+        card.className = `phase-card ${isCurrentPhase ? 'active-phase' : ''}`;
+        card.id = `phase-card-${phase.id}`;
+
+        card.innerHTML = `
+          <div class="phase-header" onclick="togglePhase(${phase.id})">
+            <div class="phase-title-wrap">
+              <span class="phase-number">PHASE ${phase.id}</span>
+              <span class="phase-title">${phase.title}</span>
+              ${phase.isOptional ? '<span class="phase-badge-opt">Optional</span>' : ''}
+            </div>
+            <div class="phase-meta">
+              <span class="phase-progress-text" id="phase-counter-${phase.id}">
+                ${phaseCompleted}/${phaseTotal} (${Math.round((phaseCompleted/phaseTotal)*100)}%)
+              </span>
+              <span class="chevron" id="chevron-${phase.id}">▼</span>
+            </div>
+          </div>
+          <div class="phase-body" id="phase-body-${phase.id}">
+            <div class="phase-concepts">
+              <strong style="color: #cbd5e1;">Concepts:</strong>
+              ${phase.concepts.map(c => `<span class="concept-tag">${c}</span>`).join('')}
+            </div>
+            <ul class="task-list">
+              ${phase.tasks.map(task => {
+                const status = taskStates[task.id] || 'pending';
+                const isChecked = status === 'completed';
+                const pillClass = status === 'completed' ? 'status-completed' : (status === 'in-progress' ? 'status-in-progress' : 'status-pending');
+                const pillLabel = status === 'completed' ? 'Completed' : (status === 'in-progress' ? 'In Progress' : 'Pending');
+
+                return `
+                  <li class="task-item ${status}" data-task-id="${task.id}" data-status="${status}">
+                    <input 
+                      type="checkbox" 
+                      class="task-checkbox" 
+                      id="chk-${task.id}" 
+                      ${isChecked ? 'checked' : ''} 
+                      onchange="toggleTask('${task.id}', this.checked)"
+                    />
+                    <div class="task-content">
+                      <label for="chk-${task.id}" class="task-label">
+                        <span class="task-id">${task.id}</span> — ${task.text}
+                      </label>
+                      <span class="task-status-pill ${pillClass}">${pillLabel}</span>
+                    </div>
+                  </li>
+                `;
+              }).join('')}
+            </ul>
+            <div class="phase-criteria">
+              <strong>Phase Completion Criteria:</strong> ${phase.criteria}
+            </div>
+          </div>
+        `;
+        root.appendChild(card);
+      });
+
+      // Update Overall Stats
+      const percent = Math.round((completedTasks / totalTasks) * 100);
+      document.getElementById('progress-percent').innerText = `${percent}%`;
+      document.getElementById('progress-fill').style.width = `${(completedTasks / totalTasks) * 100}%`;
+      document.getElementById('completed-count').innerText = completedTasks;
+
+      // Dynamically display current active in-progress task
+      const activeTask = PHASES_DATA.flatMap(p => p.tasks).find(t => taskStates[t.id] === 'in-progress');
+      const activeLabel = activeTask ? `Task ${activeTask.id} In Progress` : (completedTasks === totalTasks ? 'All Tasks Completed!' : 'Ready');
+      const activeEl = document.getElementById('active-task-label');
+      if (activeEl) activeEl.innerText = activeLabel;
+
+      applyFilter();
+    }
+
+    function toggleTask(taskId, isChecked) {
+      if (isChecked) {
+        taskStates[taskId] = 'completed';
+      } else {
+        // Restore initial status from PHASES_DATA, or fallback to pending
+        const allTasks = PHASES_DATA.flatMap(p => p.tasks);
+        const original = allTasks.find(t => t.id === taskId);
+        taskStates[taskId] = (original && original.initialStatus === 'in-progress') ? 'in-progress' : 'pending';
+      }
+      saveState(taskStates);
+      renderTracker();
+    }
+
+    function togglePhase(phaseId) {
+      const card = document.getElementById(`phase-card-${phaseId}`);
+      card.classList.toggle('collapsed');
+    }
+
+    function toggleAllPhases(expand) {
+      PHASES_DATA.forEach(phase => {
+        const card = document.getElementById(`phase-card-${phase.id}`);
+        if (expand) {
+          card.classList.remove('collapsed');
+        } else {
+          card.classList.add('collapsed');
+        }
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      applyFilter();
+    }
+
+    function applyFilter() {
+      document.querySelectorAll('.task-item').forEach(item => {
+        const status = item.getAttribute('data-status');
+        if (currentFilter === 'all') {
+          item.style.display = 'flex';
+        } else if (currentFilter === 'in-progress') {
+          item.style.display = status === 'in-progress' ? 'flex' : 'none';
+        } else if (currentFilter === 'completed') {
+          item.style.display = status === 'completed' ? 'flex' : 'none';
+        } else if (currentFilter === 'pending') {
+          item.style.display = status === 'pending' ? 'flex' : 'none';
+        }
+      });
+    }
+
+    function resetToInitial() {
+      const activeTask = PHASES_DATA.flatMap(p => p.tasks).find(t => t.initialStatus === 'in-progress');
+      const baselineLabel = activeTask ? `Task ${activeTask.id} In Progress` : 'Verified Baseline';
+      if (confirm(`Reset tracker to verified baseline (${baselineLabel})?`)) {
+        localStorage.removeItem(STORAGE_KEY);
+        taskStates = loadState();
+        renderTracker();
+      }
+    }
+
+    // Initialize
+    renderTracker();
+  </script>
+</body>
+</html>
