@@ -1,32 +1,27 @@
-# React + TypeScript + Vite
+# AI Evolution Lab
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A hands-on learning repository for building language-model systems in increasing order of complexity. Each project is self-contained so its architecture, dependencies, tests, and learning notes can evolve independently.
 
-Currently, two official plugins are available:
+## Learning Path
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Project | Focus | Status |
+|---|---|---|
+| `01-ngram-text-generator` | Statistical language modeling and decoding | In progress |
+| `02-feedforward-neural-language-model` | Learned embeddings and dense next-token prediction | Planned |
+| `03-rnn-lstm-text-generator` | Recurrent sequence modeling and hidden state | Planned |
+| `04-tiny-transformer` | Self-attention and Transformer language modeling | Planned |
+| `05-llm-apps` | Application patterns built around language models | Planned |
+| `06-rag-system` | Retrieval-augmented generation | Planned |
+| `07-ai-agents` | Tool use, planning, and agent workflows | Planned |
 
-## React Compiler
+Future project directories will be added when their implementation begins.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Current Project
 
-## Expanding the Oxlint configuration
+The active project is [`01-ngram-text-generator`](./01-ngram-text-generator/). It contains its own source code, dependencies, tests, documentation, mentorship instructions, and progress tracker.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cd 01-ngram-text-generator
+npm test
+npm run build
 ```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
